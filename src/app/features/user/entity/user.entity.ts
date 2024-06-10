@@ -1,80 +1,82 @@
-import { IsDate, IsEmail, IsNotEmpty, IsOptional, IsString } from "class-validator";
-import { Type } from 'class-transformer';
+import {IsDate, IsEmail, IsNotEmpty, IsOptional, IsString, Length} from 'class-validator';
+import {Type} from 'class-transformer';
 
-export class User{
-    
-    userId: string;
+export class User {
+  userId: string;
 
-    @IsNotEmpty()
-    @IsString()
-    firstName: string;
+  @IsNotEmpty()
+  @IsString()
+  @Length(2, 25)
+  firstName: string;
 
-    @IsNotEmpty()
-    @IsString()
-    lastName: string;
+  @IsNotEmpty()
+  @IsString()
+  @Length(2, 25)
+  lastName: string;
 
-    @IsNotEmpty()
-    @IsEmail()
-    email: string;
+  @IsNotEmpty()
+  @IsEmail()
+  @Length(8, 100)
+  email: string;
 
-    @IsNotEmpty()
-    @IsString()
-    password: string;
+  password: string;
 
-    @IsNotEmpty()
-    @IsString()
-    userRole: string;
+  @IsNotEmpty()
+  @IsString()
+  userRole: string;
 
-    @IsNotEmpty()
-    @IsString()
-    mobileNumber: string;
+  @IsNotEmpty()
+  @IsString()
+  @Length(10)
+  mobileNumber: string;
 
-    @IsNotEmpty()
-    @IsString()
-    alternativeNumber: string;
+  @IsOptional()
+  @IsString()
+  @Length(10)
+  alternativeNumber: string;
 
-    @IsNotEmpty()
-    @IsString()
-    currentAddress: string;
+  @IsNotEmpty()
+  @IsString()
+  @Length(2, 100)
+  currentAddress: string;
 
-    @IsNotEmpty()
-    @IsString()
-    permenantAddress: string;
+  @IsNotEmpty()
+  @IsString()
+  @Length(2, 100)
+  permanentAddress: string;
 
-    @IsNotEmpty()
-    @IsString()
-    nic: string;
+  @IsNotEmpty()
+  @IsString()
+  @Length(10, 12)
+  nic: string;
 
-    @IsNotEmpty()
-    @IsString()
-    dob: string;
+  @IsNotEmpty()
+  @IsString()
+  dob: string;
 
-    @IsNotEmpty()
-    @IsString()
-    gender:string;
+  @IsNotEmpty()
+  @IsString()
+  gender: string;
 
-    @IsNotEmpty()
-    @IsString()
-    maritalStatus: string;
+  @IsNotEmpty()
+  @IsString()
+  maritalStatus: string;
 
-    @IsNotEmpty()
-    @IsString()
-    departmentId: string;
+  @IsNotEmpty()
+  @IsString()
+  departmentId: string;
 
-    @IsNotEmpty()
-    @IsString()
-    divisionId: string;
+  @IsNotEmpty()
+  @IsString()
+  divisionId: string;
 
-    @IsNotEmpty()
-    @IsString()
-    status: string;
+  @IsNotEmpty()
+  @IsString()
+  status: string;
 
-    
-    createAt: Date;
+  createAt: Date;
 
-    
-    updatedAt: Date;
-    
-  
-    deletedAt?: Date;
+  updatedAt: Date;
+
+  deletedAt?: Date;
 }

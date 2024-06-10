@@ -4,5 +4,6 @@ import { UserRoleEntity } from '../entity/user-role.entity';
 
 
 export class CreateRoleDto extends UserRoleEntity{
+  email: any;
     
 }
