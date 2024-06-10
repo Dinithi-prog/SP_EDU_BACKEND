@@ -4,6 +4,7 @@ import {CreateUserDto} from './dto/create-user.dto';
 import {UpdateUserDto} from './dto/update-user.dto';
 import {ApiConstants} from '@core/constants/api-constants';
 import {ApiTags} from '@nestjs/swagger';
+import { CreateRoleDto } from './dto/create-role.dto';
 
 @Controller(ApiConstants.USER)
 @ApiTags(ApiConstants.USER)
@@ -11,9 +12,7 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    console.log(createUserDto);
-    
+  create(@Body() createUserDto: CreateUserDto) {   
     return this.userService.create(createUserDto);
     
   }
@@ -23,6 +22,13 @@ export class UserController {
     console.log("test");
     
   }
+
+  @Post('/role')
+  createUserRole(@Body() createRoleDto: CreateRoleDto){
+    return this.userService.createUserRole(createRoleDto);
+    
+  }
+  
 
   @Get(':id')
   findOne(@Param('id') id: string) {
@@ -38,4 +44,5 @@ export class UserController {
   remove(@Param('id') id: string) {
     return this.userService.remove(+id);
   }
+
 }

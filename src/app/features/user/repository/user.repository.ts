@@ -12,6 +12,10 @@ export class UserRepository extends DatabaseRepository {
         return this.insertSingle(collectionName, userParam)
     }
 
+    async createRole(collectionName: string, userParam: any){
+        return this.insertSingle(collectionName, userParam)
+    }
+
     async getUsers(collectionName: string, columnsAndValues: any){
         return this.selectWithAnd(collectionName, columnsAndValues)
     }

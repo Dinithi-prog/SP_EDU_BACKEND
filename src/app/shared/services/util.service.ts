@@ -14,6 +14,13 @@ export class UtilService {
     }
   }
 
+  generateUniqueId(prefix:string):string{
+    const currentTimeStamp = new Date().getTime();
+    const timeStampString = currentTimeStamp.toString().slice(6);
+    const randomIntegers = Math.floor(100000 + Math.random()*900000);
+    const uniqueId = `${prefix}${timeStampString}${randomIntegers}`;
+    return uniqueId;
+  }
   getEnvironmentSpecificValue<T>(dev: T, production: T): T {
     return process.env.NODE_ENV === 'production' ? production : dev;
   }
