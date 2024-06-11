@@ -27,12 +27,11 @@ export class User {
 
   @IsNotEmpty()
   @IsString()
-  @Length(10)
+  @Length(10, 10)
   mobileNumber: string;
 
   @IsOptional()
   @IsString()
-  @Length(10)
   alternativeNumber: string;
 
   @IsNotEmpty()
@@ -70,8 +69,6 @@ export class User {
   @IsString()
   divisionId: string;
 
-  @IsNotEmpty()
-  @IsString()
   status: string;
 
   createAt: Date;

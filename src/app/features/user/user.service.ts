@@ -33,6 +33,7 @@ export class UserService {
     // Set the creation and update timestamps
     createUserDto.createAt = new Date();
     createUserDto.updatedAt = new Date();
+    createUserDto.status = 'Active';
 
     // Extract the year from the dob
     const dobYear = new Date(createUserDto.dob).getFullYear();
@@ -120,6 +121,9 @@ export class UserService {
   async updateUser(id: string, updateUserDto: UpdateUserDto) {
     // Ensure the user exists by checking the userId
     await this.getUserOrThrow({userId: id});
+
+    // Set the update timestamp
+    updateUserDto.updatedAt = new Date();
 
     // Update the user in the repository with the new data
     this.userRepository.updateUser(SchemaConstants.USER, updateUserDto, {userId: id});

@@ -7,6 +7,7 @@ import {ApiTags} from '@nestjs/swagger';
 import {CreateRoleDto} from './dto/create-role.dto';
 import {UniqueIdValidationPipe} from '@shared/pipes/unique-id-validation.pipe';
 import {UserLoginDto} from './dto/login-user.dto';
+import {Public} from '@core/decorators/public.decorator';
 
 @Controller(ApiConstants.USER)
 @ApiTags(ApiConstants.USER)
@@ -14,11 +15,13 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post()
+  @Public()
   create(@Body() createUserDto: CreateUserDto) {
     return this.userService.createUser(createUserDto);
   }
 
   @Post('login')
+  @Public()
   login(@Body() userLoginDto: UserLoginDto) {
     return this.userService.loginUser(userLoginDto);
   }
@@ -29,6 +32,7 @@ export class UserController {
   }
 
   @Get()
+  @Public()
   findAllUser() {
     return this.userService.findAllUser();
   }
@@ -51,6 +55,7 @@ export class UserController {
   }
 
   @Delete(':id')
+  @Public()
   @UsePipes()
   deleteUser(@Param('id', UniqueIdValidationPipe) id: string) {
     return this.userService.deleteUser(id);

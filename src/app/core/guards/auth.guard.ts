@@ -1,12 +1,13 @@
-import {CanActivate, ExecutionContext, Injectable, UnauthorizedException} from '@nestjs/common';
+import {CanActivate, ExecutionContext, Injectable, UnauthorizedException, UsePipes} from '@nestjs/common';
 import {Reflector} from '@nestjs/core';
 import * as jwt from 'jsonwebtoken';
 import {ConfigService} from '@nestjs/config';
 import {DatabaseRepository} from '@shared/repositories/database.repository';
+import {SchemaConstants} from '@core/constants/schema-constants';
 
 interface JWTPayload {
-  user_id: string;
-  client_id: string;
+  userId: string;
+  userName: string;
   iat: number;
   exp: number;
 }
@@ -35,26 +36,16 @@ export class AuthGuard implements CanActivate {
     const token = request?.headers['x-access-token']?.split('Bearer ')[1];
 
     try {
-      // const jwtSecret = this.configService.get('JWT_SECRET');
-      // const payload = (await jwt.verify(token, jwtSecret)) as JWTPayload;
+      const jwtSecret = this.configService.get('JWT_SECRET');
+      const payload = (await jwt.verify(token, jwtSecret)) as JWTPayload;
 
-      // const adminPromise = this.databaseRepository.selectWithAndOne(MongoDBSchemas.Administrators, {
-      //   admin_id: payload.user_id,
-      // });
+      const userPromise = this.databaseRepository.selectWithAndOne(SchemaConstants.USER, {
+        userId: payload.userId,
+      });
 
-      // const clientPromise = this.databaseRepository.selectWithAndOne(MongoDBSchemas.Client, {
-      //   client_id: payload.user_id,
-      // });
-
-      // const customerPromise = this.databaseRepository.selectWithAndOne(MongoDBSchemas.Customer, {
-      //   client_id: payload.client_id,
-      // });
-
-      // const [admin, client, customer] = await Promise.all([adminPromise, clientPromise, customerPromise]);
-
-      // if (!admin && !client && !customer) {
-      //   return false;
-      // }
+      if (!userPromise) {
+        return false;
+      }
       return true;
     } catch (error) {
       throw new UnauthorizedException();
