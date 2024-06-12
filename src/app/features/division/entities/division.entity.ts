@@ -7,7 +7,7 @@ export class Division {
   divisionName: string;
 
   @IsNotEmpty()
-  departmentId: number;
+  departmentName: number;
 
   @IsOptional()
   @IsString()

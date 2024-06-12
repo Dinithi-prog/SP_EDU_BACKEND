@@ -8,8 +8,8 @@ export class DepartmentRepository extends DatabaseRepository {
     super(database);
   }
 
-  async createDepartment(collectionName: string, userParam: any) {
-    return this.insertSingle(collectionName, userParam);
+  async createDepartment(collectionName: string, columnsAndValues: any) {
+    return this.insertSingle(collectionName, columnsAndValues);
   }
 
   async getDepartments(collectionName: string, columnsAndValues: any) {

@@ -32,7 +32,6 @@ export class UserController {
   }
 
   @Get()
-  @Public()
   findAllUser() {
     return this.userService.findAllUser();
   }
@@ -44,6 +43,7 @@ export class UserController {
 
   @Get(':id')
   @UsePipes()
+  @Public()
   findOneUser(@Param('id', UniqueIdValidationPipe) id: string) {
     return this.userService.findOneUser(id);
   }

@@ -63,11 +63,11 @@ export class User {
 
   @IsNotEmpty()
   @IsString()
-  departmentId: string;
+  departmentName: string;
 
   @IsNotEmpty()
   @IsString()
-  divisionId: string;
+  divisionName: string;
 
   status: string;
 
