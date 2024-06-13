@@ -73,7 +73,7 @@ export class UserService {
 
     const payload = {
       userId: registeredUser.userId,
-      userName: registeredUser.userName,
+      userName: registeredUser.firstName + ' ' + registeredUser.firstName,
       userRole: registeredUser.userRole,
     };
 
@@ -81,7 +81,7 @@ export class UserService {
 
     return {
       userId: registeredUser.userId,
-      userName: registeredUser.userName,
+      userName: registeredUser.firstName + ' ' + registeredUser.firstName,
       userRole: registeredUser.userRole,
       token: token,
     };
