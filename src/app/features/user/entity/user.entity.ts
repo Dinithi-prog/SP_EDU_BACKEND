@@ -1,5 +1,4 @@
-import {IsDate, IsEmail, IsNotEmpty, IsOptional, IsString, Length} from 'class-validator';
-import {Type} from 'class-transformer';
+import {IsEmail, IsNotEmpty, IsOptional, IsString, Length} from 'class-validator';
 
 export class User {
   userId: string;

@@ -25,6 +25,8 @@ import {EnvironmentConfig} from '@shared/models/env/environment-config.model';
         });
 
         if (results.length > 0) {
+          console.log('test');
+
           throw new NotAcceptableException(
             results.map(value => value.toString(false)).join(','),
             'Invalid environment variable config',

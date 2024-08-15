@@ -1,5 +1,4 @@
-import {UserRoleEntity} from './entity/user-role.entity';
-import {BadRequestException, ConflictException, Injectable, NotFoundException} from '@nestjs/common';
+import {Injectable, BadRequestException, ConflictException, NotFoundException, Logger} from '@nestjs/common';
 import {CreateUserDto} from './dto/create-user.dto';
 import {UpdateUserDto} from './dto/update-user.dto';
 import {UserRepository} from './repository/user.repository';
@@ -8,8 +7,8 @@ import {UtilService} from '@shared/services/util.service';
 import {UniqueIdConstants} from '@core/constants/unique-id-constants';
 import {CreateRoleDto} from './dto/create-role.dto';
 import {PasswordService} from '@shared/services/password.service';
-import {UserLoginDto} from './dto/login-user.dto';
 import {JwtService} from '@shared/services/jwt-service.service';
+import * as promClient from 'prom-client';
 
 interface SignInParams {
   email: string;
@@ -18,6 +17,15 @@ interface SignInParams {
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
+
+  // Monitoring: Metrics example using prom-client
+  private readonly requestCounter = new promClient.Counter({
+    name: 'user_service_requests_total',
+    help: 'Total number of requests to UserService',
+    labelNames: ['method', 'status'],
+  });
+
   constructor(
     private readonly userRepository: UserRepository,
     private readonly utilService: UtilService,
@@ -26,149 +34,175 @@ export class UserService {
   ) {}
 
   async createUser(createUserDto: CreateUserDto) {
-    // Generate a unique user ID
-    const userId = this.utilService.generateUniqueId(UniqueIdConstants.USER);
-    createUserDto.userId = userId;
+    this.logger.log('Creating a new user', {email: createUserDto.email});
 
-    // Set the creation and update timestamps
-    createUserDto.createAt = new Date();
-    createUserDto.updatedAt = new Date();
-    createUserDto.status = 'Active';
+    try {
+      const userId = this.utilService.generateUniqueId(UniqueIdConstants.USER);
+      createUserDto.userId = userId;
 
-    // Extract the year from the dob
-    const dobYear = new Date(createUserDto.dob).getFullYear();
+      const now = new Date();
+      createUserDto.createAt = now;
+      createUserDto.updatedAt = now;
+      createUserDto.status = 'Active';
 
-    // Generate the password using firstName and dob year
-    const generatedPassword = `${createUserDto.firstName}${dobYear}`;
+      const dobYear = new Date(createUserDto.dob).getFullYear();
+      const generatedPassword = `${createUserDto.firstName}${dobYear}`;
+      createUserDto.password = await this.passwordService.hashPassword(generatedPassword);
 
-    const hashedPassword = await this.passwordService.hashPassword(generatedPassword);
+      await this.checkDuplicates(SchemaConstants.USER, createUserDto);
 
-    createUserDto.password = hashedPassword;
+      const user = await this.userRepository.createUser(SchemaConstants.USER, createUserDto);
 
-    // Check for duplicate email
-    await this.duplicateOrThrow(SchemaConstants.USER, {email: createUserDto.email});
-
-    // Check for duplicate mobile number
-    await this.duplicateOrThrow(SchemaConstants.USER, {mobileNumber: createUserDto.mobileNumber});
-
-    // Check for duplicate alternative number if it exists
-    createUserDto.alternativeNumber
-      ? await this.duplicateOrThrow(SchemaConstants.USER, {alternativeNumber: createUserDto.alternativeNumber})
-      : null;
-
-    // Create the user in the repository
-    return this.userRepository.createUser(SchemaConstants.USER, createUserDto);
+      this.logger.log('User created successfully', {userId});
+      this.requestCounter.inc({method: 'createUser', status: 'success'});
+      return user;
+    } catch (error) {
+      this.logger.error('Failed to create user', {email: createUserDto.email, error});
+      this.requestCounter.inc({method: 'createUser', status: 'error'});
+      throw error;
+    }
   }
 
   async loginUser({email, password}: SignInParams) {
-    const registeredUser = await this.getUserOrThrow({email: email});
+    this.logger.log('Logging in user', {email});
 
-    const hashPassword = registeredUser?.password;
+    try {
+      const registeredUser = await this.getUserOrThrow({email});
 
-    const isValidPassword = await this.passwordService.comparePasswords(password, hashPassword);
+      const isValidPassword = await this.passwordService.comparePasswords(password, registeredUser.password);
 
-    if (!isValidPassword) {
-      throw new BadRequestException('Invalid password: The password is incorrect.');
+      if (!isValidPassword) {
+        this.logger.warn('Invalid login attempt due to incorrect password', {email});
+        throw new BadRequestException('Invalid credentials');
+      }
+
+      const payload = {
+        userId: registeredUser.userId,
+        userName: `${registeredUser.firstName} ${registeredUser.lastName}`,
+        userRole: registeredUser.userRole,
+      };
+
+      const token = this.jwtService.generateJWT(payload);
+
+      this.logger.log('User logged in successfully', {email});
+      this.requestCounter.inc({method: 'loginUser', status: 'success'});
+      return {
+        userId: registeredUser.userId,
+        userName: `${registeredUser.firstName} ${registeredUser.lastName}`,
+        userRole: registeredUser.userRole,
+        token,
+      };
+    } catch (error) {
+      this.logger.error('Login failed', {email, error});
+      this.requestCounter.inc({method: 'loginUser', status: 'error'});
+      throw error;
     }
-
-    const payload = {
-      userId: registeredUser.userId,
-      userName: registeredUser.firstName + ' ' + registeredUser.lastName,
-      userRole: registeredUser.userRole,
-    };
-
-    const token = this.jwtService.generateJWT(payload);
-
-    return {
-      userId: registeredUser.userId,
-      userName: registeredUser.firstName + ' ' + registeredUser.lastName,
-      userRole: registeredUser.userRole,
-      token: token,
-    };
   }
 
   async createUserRole(createRoleDto: CreateRoleDto) {
-    // Generate a unique role ID
-    const roleId = this.utilService.generateUniqueId(UniqueIdConstants.ROLE);
-    createRoleDto.roleId = roleId;
+    this.logger.log('Creating a new user role', {roleName: createRoleDto.roleName});
 
-    // Set the creation and update timestamps
-    createRoleDto.createdAt = new Date();
-    createRoleDto.updatedAt = new Date();
+    try {
+      const roleId = this.utilService.generateUniqueId(UniqueIdConstants.ROLE);
+      createRoleDto.roleId = roleId;
 
-    // Check for duplicate role name
-    await this.duplicateOrThrow(SchemaConstants.ROLE, {roleName: createRoleDto.roleName});
+      const now = new Date();
+      createRoleDto.createdAt = now;
+      createRoleDto.updatedAt = now;
 
-    // Create the role in the repository
-    return this.userRepository.createRole(SchemaConstants.ROLE, createRoleDto);
+      await this.checkDuplicates(SchemaConstants.ROLE, {roleName: createRoleDto.roleName});
+
+      const role = await this.userRepository.createRole(SchemaConstants.ROLE, createRoleDto);
+
+      this.logger.log('User role created successfully', {roleId});
+      this.requestCounter.inc({method: 'createUserRole', status: 'success'});
+      return role;
+    } catch (error) {
+      this.logger.error('Failed to create user role', {roleName: createRoleDto.roleName, error});
+      this.requestCounter.inc({method: 'createUserRole', status: 'error'});
+      throw error;
+    }
   }
 
   findAllUser() {
-    // Return all users by calling the getUsers method from userRepository with an empty filter
+    this.logger.log('Retrieving all users');
     return this.userRepository.getUsers(SchemaConstants.USER, {});
   }
 
   findAllUserRole() {
-    // Return all users roles by calling the getRoles method from userRepository with an empty filter
+    this.logger.log('Retrieving all user roles');
     return this.userRepository.getRoles(SchemaConstants.ROLE, {});
   }
 
   findOneUser(id: string) {
-    // Retrieve a user by their userId from the user repository
-    return this.userRepository.getUser(SchemaConstants.USER, {userId: id});
+    this.logger.log('Retrieving user by ID', {userId: id});
+
+    return this.getUserOrThrow({userId: id});
   }
 
   async updateUser(id: string, updateUserDto: UpdateUserDto) {
-    // Ensure the user exists by checking the userId
-    await this.getUserOrThrow({userId: id});
+    this.logger.log('Updating user', {userId: id});
 
-    // Set the update timestamp
-    updateUserDto.updatedAt = new Date();
+    try {
+      await this.getUserOrThrow({userId: id});
 
-    // Update the user in the repository with the new data
-    this.userRepository.updateUser(SchemaConstants.USER, updateUserDto, {userId: id});
+      updateUserDto.updatedAt = new Date();
 
-    // Return a success message
-    return 'User updated successfully';
+      await this.userRepository.updateUser(SchemaConstants.USER, updateUserDto, {userId: id});
+
+      this.logger.log('User updated successfully', {userId: id});
+      this.requestCounter.inc({method: 'updateUser', status: 'success'});
+      return 'User updated successfully';
+    } catch (error) {
+      this.logger.error('Failed to update user', {userId: id, error});
+      this.requestCounter.inc({method: 'updateUser', status: 'error'});
+      throw error;
+    }
   }
 
   async deleteUser(id: string) {
-    // Ensure the user exists by checking the userId
-    await this.getUserOrThrow({userId: id});
+    this.logger.log('Deleting user', {userId: id});
 
-    // Delete the user from the repository using the userId
-    this.userRepository.deleteUser(SchemaConstants.USER, {userId: id});
+    try {
+      await this.getUserOrThrow({userId: id});
 
-    // Return a success message
-    return 'User deleted successfully';
+      await this.userRepository.deleteUser(SchemaConstants.USER, {userId: id});
+
+      this.logger.log('User deleted successfully', {userId: id});
+      this.requestCounter.inc({method: 'deleteUser', status: 'success'});
+      return 'User deleted successfully';
+    } catch (error) {
+      this.logger.error('Failed to delete user', {userId: id, error});
+      this.requestCounter.inc({method: 'deleteUser', status: 'error'});
+      throw error;
+    }
   }
 
-  async getUserOrThrow(columnsAndValue: any) {
-    // Retrieve user based on columns and values from the user repository
+  private async getUserOrThrow(columnsAndValue: any) {
+    this.logger.debug('Checking if user exists', {columnsAndValue});
+
     const user = await this.userRepository.getUser(SchemaConstants.USER, columnsAndValue);
 
-    // If the user is not found, throw a NotFoundException
     if (!user) {
-      throw new NotFoundException(`User not found!`);
+      this.logger.warn('User not found', {columnsAndValue});
+      throw new NotFoundException('User not found');
     }
 
-    // Return the found user
     return user;
   }
 
-  async duplicateOrThrow(collectionName: string, columnsAndValue: any) {
-    // Retrieve a user based on column name and values from the user repository
+  private async checkDuplicates(collectionName: string, columnsAndValue: any) {
+    this.logger.debug('Checking for duplicate entry', {collectionName, columnsAndValue});
+
     const duplicate = await this.userRepository.getUser(collectionName, columnsAndValue);
 
-    // If a duplicate is found, throw a ConflictException with detailed information
     if (duplicate) {
       const duplicateValueString = Object.entries(columnsAndValue)
         .map(([key, value]) => `${key}: ${value}`)
         .join(', ');
 
-      throw new ConflictException(`Duplicate ${collectionName} ${duplicateValueString}`);
+      this.logger.warn('Duplicate entry found', {collectionName, duplicateValueString});
+      throw new ConflictException(`Duplicate ${collectionName} entry found for ${duplicateValueString}`);
     }
-
-    return;
   }
 }

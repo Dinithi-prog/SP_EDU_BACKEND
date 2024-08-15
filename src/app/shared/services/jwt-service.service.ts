@@ -9,7 +9,7 @@ export class JwtService {
   generateJWT(payload: any) {
     const jwtSecret = this.configService.get('JWT_SECRET');
     return jwt.sign(payload, jwtSecret, {
-      expiresIn: '60d',
+      expiresIn: '8h',
     });
   }
 }

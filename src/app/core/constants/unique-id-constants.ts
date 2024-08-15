@@ -3,4 +3,5 @@ export enum UniqueIdConstants {
   ROLE = 'ROL',
   DEPARTMENT = 'DRP',
   DIVISION = 'DIV',
+  LEAVE = 'LEV',
 }

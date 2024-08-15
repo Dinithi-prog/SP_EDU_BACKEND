@@ -4,4 +4,5 @@ export enum SchemaConstants {
   DEPARTMENT = 'department',
   DIVISION = 'division',
   ATTENDANCE = 'attendance',
+  LEAVE = 'leave',
 }

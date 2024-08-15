@@ -4,9 +4,13 @@ import {Type} from 'class-transformer';
 export class Attendance {
   attendanceId: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   userId: string;
+
+  @IsNotEmpty()
+  @IsString()
+  type: string;
 
   @IsOptional()
   @IsDate()

@@ -46,6 +46,8 @@ export class AuthGuard implements CanActivate {
       if (!userPromise) {
         return false;
       }
+      request.user = payload;
+
       return true;
     } catch (error) {
       throw new UnauthorizedException();
